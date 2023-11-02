@@ -12,12 +12,16 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_panorbit_camera::PanOrbitCamera;
 use bevy_panorbit_camera::PanOrbitCameraPlugin;
 use chunk::Chunk;
+use diagnostics::MeshDiagnosticPlugin;
+use inspector::DiagnosticInspectorPlugin;
 
 pub const CHUNK_SIZE: usize = 3;
 pub const CHUNK_SIZE_SQUARED: usize = CHUNK_SIZE * CHUNK_SIZE;
 pub const CHUNK_SIZE_CUBED: usize = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 
 mod chunk;
+mod diagnostics;
+mod inspector;
 
 fn main() {
     App::new()
@@ -29,6 +33,8 @@ fn main() {
                 },
             }),
             WireframePlugin,
+            MeshDiagnosticPlugin,
+            DiagnosticInspectorPlugin,
             PanOrbitCameraPlugin,
             WorldInspectorPlugin::new(),
         ))
