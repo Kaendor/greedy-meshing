@@ -1,7 +1,5 @@
 use bevy::{
-    diagnostic::{
-        Diagnostic, DiagnosticId, Diagnostics, FrameTimeDiagnosticsPlugin, RegisterDiagnostic,
-    },
+    diagnostic::{Diagnostic, DiagnosticId, Diagnostics, RegisterDiagnostic},
     prelude::*,
 };
 
@@ -12,7 +10,6 @@ pub const VERTICES_COUNT: DiagnosticId =
 impl Plugin for MeshDiagnosticPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.register_diagnostic(Diagnostic::new(VERTICES_COUNT, "vertices_count", 10))
-            .add_plugins(FrameTimeDiagnosticsPlugin)
             .add_systems(Update, vertice_counting);
     }
 }

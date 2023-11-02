@@ -1,3 +1,4 @@
+use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::prelude::*;
 use bevy::render::camera::ScalingMode;
 use bevy::render::settings::WgpuSettings;
@@ -13,7 +14,7 @@ use chunk::Chunk;
 use diagnostics::MeshDiagnosticPlugin;
 use inspector::DiagnosticInspectorPlugin;
 
-pub const CHUNK_SIZE: usize = 3;
+pub const CHUNK_SIZE: usize = 1;
 pub const CHUNK_SIZE_SQUARED: usize = CHUNK_SIZE * CHUNK_SIZE;
 pub const CHUNK_SIZE_CUBED: usize = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 
@@ -33,6 +34,7 @@ fn main() {
             }),
             WireframePlugin,
             MeshDiagnosticPlugin,
+            FrameTimeDiagnosticsPlugin,
             DiagnosticInspectorPlugin,
             PanOrbitCameraPlugin,
             WorldInspectorPlugin::new(),

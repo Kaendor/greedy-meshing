@@ -24,7 +24,7 @@ impl Chunk {
         let mut normals = Vec::new();
         let mut indices = Vec::new();
 
-        for (i, v) in self.voxels.iter().enumerate() {
+        for (i, _v) in self.voxels.iter().enumerate() {
             let z = i / (CHUNK_SIZE_SQUARED);
 
             let ti = i - (z * CHUNK_SIZE_SQUARED);
