@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy::render::camera::ScalingMode;
 use bevy::render::mesh::Indices;
-use bevy::render::render_resource::PrimitiveTopology;
+use bevy::render::render_resource::{Face, PrimitiveTopology};
 use bevy::render::settings::WgpuSettings;
 use bevy::render::RenderPlugin;
 use bevy::{
@@ -14,6 +14,7 @@ use bevy_panorbit_camera::PanOrbitCameraPlugin;
 use chunk::Chunk;
 use diagnostics::MeshDiagnosticPlugin;
 use inspector::DiagnosticInspectorPlugin;
+use strum::{EnumIter, IntoEnumIterator};
 
 pub const CHUNK_SIZE: usize = 3;
 pub const CHUNK_SIZE_SQUARED: usize = CHUNK_SIZE * CHUNK_SIZE;
@@ -53,7 +54,7 @@ fn setup(
 
     let chunk = Chunk::new();
 
-    for (i, _v) in chunk.voxels.iter().enumerate() {
+    for (i, v) in chunk.voxels.iter().enumerate() {
         let z = i / (CHUNK_SIZE_SQUARED);
 
         let ti = i - (z * CHUNK_SIZE_SQUARED);
@@ -109,47 +110,121 @@ fn setup(
     // Text to describe the controls.
 }
 
+#[derive(EnumIter, Debug, PartialEq, Eq)]
+enum FaceDirection {
+    Top,
+    Bottom,
+    Right,
+    Left,
+    Back,
+    Forward,
+}
+
+impl FaceDirection {
+    fn vertices(&self) -> [[f32; 3]; 4] {
+        match self {
+            FaceDirection::Top => [
+                [-0.5, 0.5, -0.5], // vertex with index 0
+                [0.5, 0.5, -0.5],  // vertex with index 1
+                [0.5, 0.5, 0.5],   // etc. until 23
+                [-0.5, 0.5, 0.5],
+            ],
+            FaceDirection::Bottom => [
+                [-0.5, -0.5, -0.5],
+                [0.5, -0.5, -0.5],
+                [0.5, -0.5, 0.5],
+                [-0.5, -0.5, 0.5],
+            ],
+            FaceDirection::Right => [
+                [0.5, -0.5, -0.5],
+                [0.5, -0.5, 0.5],
+                [0.5, 0.5, 0.5], // This vertex is at the same position as vertex with index 2, but they'll have different UV and normal
+                [0.5, 0.5, -0.5],
+            ],
+            FaceDirection::Left => [
+                [-0.5, -0.5, -0.5],
+                [-0.5, -0.5, 0.5],
+                [-0.5, 0.5, 0.5],
+                [-0.5, 0.5, -0.5],
+            ],
+            FaceDirection::Back => [
+                [-0.5, -0.5, 0.5],
+                [-0.5, 0.5, 0.5],
+                [0.5, 0.5, 0.5],
+                [0.5, -0.5, 0.5],
+            ],
+            FaceDirection::Forward => [
+                [-0.5, -0.5, -0.5],
+                [-0.5, 0.5, -0.5],
+                [0.5, 0.5, -0.5],
+                [0.5, -0.5, -0.5],
+            ],
+        }
+    }
+
+    fn normals(&self) -> [[f32; 3]; 4] {
+        match self {
+            FaceDirection::Top => [
+                [0.0, 1.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 1.0, 0.0],
+            ],
+            FaceDirection::Bottom => [
+                [0.0, -1.0, 0.0],
+                [0.0, -1.0, 0.0],
+                [0.0, -1.0, 0.0],
+                [0.0, -1.0, 0.0],
+            ],
+            FaceDirection::Right => [
+                [1.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+            ],
+            FaceDirection::Left => [
+                [-1.0, 0.0, 0.0],
+                [-1.0, 0.0, 0.0],
+                [-1.0, 0.0, 0.0],
+                [-1.0, 0.0, 0.0],
+            ],
+            FaceDirection::Back => [
+                [0.0, 0.0, 1.0],
+                [0.0, 0.0, 1.0],
+                [0.0, 0.0, 1.0],
+                [0.0, 0.0, 1.0],
+            ],
+            FaceDirection::Forward => [
+                [0.0, 0.0, -1.0],
+                [0.0, 0.0, -1.0],
+                [0.0, 0.0, -1.0],
+                [0.0, 0.0, -1.0],
+            ],
+        }
+    }
+}
+
+fn create_cube_vertices_at(pos: &IVec3) -> (Vec<[f32; 3]>, Vec<[f32; 3]>) {
+    // Each array is an [x, y, z] coordinate in local space.
+    // Meshes always rotate around their local [0, 0, 0] when a rotation is applied to their Transform.
+    // By centering our mesh around the origin, rotating the mesh preserves its center of mass.
+    FaceDirection::iter()
+        // for each face, associate normals
+        .flat_map(|f| f.vertices().into_iter().zip(f.normals().into_iter()))
+        // add the required position to each vertex
+        .map(|(v, n)| (Vec3::from_array(v) + pos.as_vec3(), n))
+        .map(|(v, n)| (v.to_array(), n))
+        .unzip()
+}
+
 fn create_cube_mesh() -> Mesh {
     let mut cube_mesh = Mesh::new(PrimitiveTopology::TriangleList);
+    let (vertices, normals) = create_cube_vertices_at(&IVec3::ZERO);
 
     #[rustfmt::skip]
     cube_mesh.insert_attribute(
         Mesh::ATTRIBUTE_POSITION,
-        // Each array is an [x, y, z] coordinate in local space.
-        // Meshes always rotate around their local [0, 0, 0] when a rotation is applied to their Transform.
-        // By centering our mesh around the origin, rotating the mesh preserves its center of mass.
-        vec![
-            // top (facing towards +y)
-            [-0.5, 0.5, -0.5], // vertex with index 0
-            [0.5, 0.5, -0.5], // vertex with index 1
-            [0.5, 0.5, 0.5], // etc. until 23
-            [-0.5, 0.5, 0.5],
-            // bottom   (-y)
-            [-0.5, -0.5, -0.5],
-            [0.5, -0.5, -0.5],
-            [0.5, -0.5, 0.5],
-            [-0.5, -0.5, 0.5],
-            // right    (+x)
-            [0.5, -0.5, -0.5],
-            [0.5, -0.5, 0.5],
-            [0.5, 0.5, 0.5], // This vertex is at the same position as vertex with index 2, but they'll have different UV and normal
-            [0.5, 0.5, -0.5],
-            // left     (-x)
-            [-0.5, -0.5, -0.5],
-            [-0.5, -0.5, 0.5],
-            [-0.5, 0.5, 0.5],
-            [-0.5, 0.5, -0.5],
-            // back     (+z)
-            [-0.5, -0.5, 0.5],
-            [-0.5, 0.5, 0.5],
-            [0.5, 0.5, 0.5],
-            [0.5, -0.5, 0.5],
-            // forward  (-z)
-            [-0.5, -0.5, -0.5],
-            [-0.5, 0.5, -0.5],
-            [0.5, 0.5, -0.5],
-            [0.5, -0.5, -0.5],
-        ],
+        vertices
     );
 
     // Set-up UV coordinated to point to the upper (V < 0.5), "dirt+grass" part of the texture.
@@ -182,38 +257,7 @@ fn create_cube_mesh() -> Mesh {
     #[rustfmt::skip]
     cube_mesh.insert_attribute(
         Mesh::ATTRIBUTE_NORMAL,
-        vec![
-            // Normals for the top side (towards +y)
-            [0.0, 1.0, 0.0],
-            [0.0, 1.0, 0.0],
-            [0.0, 1.0, 0.0],
-            [0.0, 1.0, 0.0],
-            // Normals for the bottom side (towards -y)
-            [0.0, -1.0, 0.0],
-            [0.0, -1.0, 0.0],
-            [0.0, -1.0, 0.0],
-            [0.0, -1.0, 0.0],
-            // Normals for the right side (towards +x)
-            [1.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0],
-            // Normals for the left side (towards -x)
-            [-1.0, 0.0, 0.0],
-            [-1.0, 0.0, 0.0],
-            [-1.0, 0.0, 0.0],
-            [-1.0, 0.0, 0.0],
-            // Normals for the back side (towards +z)
-            [0.0, 0.0, 1.0],
-            [0.0, 0.0, 1.0],
-            [0.0, 0.0, 1.0],
-            [0.0, 0.0, 1.0],
-            // Normals for the forward side (towards -z)
-            [0.0, 0.0, -1.0],
-            [0.0, 0.0, -1.0],
-            [0.0, 0.0, -1.0],
-            [0.0, 0.0, -1.0],
-        ],
+normals
     );
 
     // Create the triangles out of the 24 vertices we created.
