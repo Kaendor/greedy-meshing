@@ -1,6 +1,6 @@
 # Install
 
-You need to install rust : [](https://www.rust-lang.org/tools/install)
+You need to install rust : [here](https://www.rust-lang.org/tools/install)
 
 # Run
 
