@@ -51,8 +51,8 @@ fn setup(
     // Import the custom texture.
     // Create and save a handle to the mesh.
 
-    let chunk = Chunk::new();
-    let chunk_mesh = chunk.generate_mesh();
+    let chunk = Chunk::new(CHUNK_SIZE);
+    let chunk_mesh = chunk.generate_naive_mesh();
     let chunk_mesh_handle: Handle<Mesh> = meshes.add(chunk_mesh);
 
     commands.spawn((

@@ -5,32 +5,36 @@ use bevy::{
 };
 
 pub struct Chunk {
+    pub size: usize,
     pub voxels: Vec<Voxel>,
 }
 
 impl Chunk {
-    pub fn new() -> Self {
-        let voxels = (0..CHUNK_SIZE_CUBED)
+    pub fn new(size: usize) -> Self {
+        let voxels = (0..size.pow(3))
             .map(|_p| Voxel {
                 kind: BlockKind::Rock,
             })
             .collect();
-        Chunk { voxels }
+        Chunk { voxels, size }
     }
 
-    pub fn generate_mesh(&self) -> Mesh {
+    pub fn generate_naive_mesh(&self) -> Mesh {
         let mut cube_mesh = Mesh::new(PrimitiveTopology::TriangleList);
         let mut positions = Vec::new();
         let mut normals = Vec::new();
         let mut indices = Vec::new();
 
+        let size_square = self.size.pow(2);
+        let size_cubed = self.size.pow(3);
+
         for (i, _v) in self.voxels.iter().enumerate() {
-            let z = i / (CHUNK_SIZE_SQUARED);
+            let z = i / (size_square);
 
-            let ti = i - (z * CHUNK_SIZE_SQUARED);
+            let ti = i - (z * size_square);
 
-            let x = ti % CHUNK_SIZE;
-            let y = ti / CHUNK_SIZE;
+            let x = ti % self.size;
+            let y = ti / self.size;
             let index = UVec3::new(x as u32, y as u32, z as u32);
 
             let (pos, n, id) = create_cube_vertices_at(&index);
@@ -61,4 +65,81 @@ pub struct Voxel {
 pub enum BlockKind {
     Rock,
     Air,
+}
+
+#[cfg(test)]
+mod tests {
+    use bevy::{
+        prelude::Mesh,
+        render::mesh::{Indices, VertexAttributeValues},
+    };
+
+    use super::Chunk;
+
+    #[test]
+    fn naive_mesh_simple() {
+        let size = 1;
+        let chunk = Chunk::new(size);
+        let chunk_mesh = chunk.generate_naive_mesh();
+
+        let vertices_count = chunk_mesh.count_vertices();
+        let Indices::U32(indices) = chunk_mesh.indices().expect("indices") else {
+            panic!("no indices of u32")
+        };
+
+        assert_eq!(vertices_count, 24);
+        assert_eq!(indices.len(), 36);
+
+        let expected_vertices = vec![
+            // top (facing towards +y)
+            [-0.5, 0.5, -0.5], // vertex with index 0
+            [0.5, 0.5, -0.5],  // vertex with index 1
+            [0.5, 0.5, 0.5],   // etc. until 23
+            [-0.5, 0.5, 0.5],
+            // bottom   (-y)
+            [-0.5, -0.5, -0.5],
+            [0.5, -0.5, -0.5],
+            [0.5, -0.5, 0.5],
+            [-0.5, -0.5, 0.5],
+            // right    (+x)
+            [0.5, -0.5, -0.5],
+            [0.5, -0.5, 0.5],
+            [0.5, 0.5, 0.5], // This vertex is at the same position as vertex with index 2, but they'll have different UV and normal
+            [0.5, 0.5, -0.5],
+            // left     (-x)
+            [-0.5, -0.5, -0.5],
+            [-0.5, -0.5, 0.5],
+            [-0.5, 0.5, 0.5],
+            [-0.5, 0.5, -0.5],
+            // back     (+z)
+            [-0.5, -0.5, 0.5],
+            [-0.5, 0.5, 0.5],
+            [0.5, 0.5, 0.5],
+            [0.5, -0.5, 0.5],
+            // forward  (-z)
+            [-0.5, -0.5, -0.5],
+            [-0.5, 0.5, -0.5],
+            [0.5, 0.5, -0.5],
+            [0.5, -0.5, -0.5],
+        ];
+
+        let VertexAttributeValues::Float32x3(vertices) = chunk_mesh
+            .attribute(Mesh::ATTRIBUTE_POSITION)
+            .expect("vertices")
+        else {
+            panic!("vertice vec")
+        };
+
+        let expected_indices = vec![
+            0, 3, 1, 1, 3, 2, // triangles making up the top (+y) facing side.
+            4, 5, 7, 5, 6, 7, // bottom (-y)
+            8, 11, 9, 9, 11, 10, // right (+x)
+            12, 13, 15, 13, 14, 15, // left (-x)
+            16, 19, 17, 17, 19, 18, // back (+z)
+            20, 21, 23, 21, 22, 23, // forward (-z)
+        ];
+
+        assert_eq!(vertices, &expected_vertices);
+        assert_eq!(indices, &expected_indices);
+    }
 }
