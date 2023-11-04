@@ -1,4 +1,4 @@
-use crate::{mesh::create_cube_vertices_at, CHUNK_SIZE, CHUNK_SIZE_CUBED, CHUNK_SIZE_SQUARED};
+use crate::mesh::create_cube_vertices_at;
 use bevy::{
     prelude::*,
     render::{mesh::Indices, render_resource::PrimitiveTopology},
@@ -26,7 +26,6 @@ impl Chunk {
         let mut indices = Vec::new();
 
         let size_square = self.size.pow(2);
-        let size_cubed = self.size.pow(3);
 
         for (i, _v) in self.voxels.iter().enumerate() {
             let z = i / (size_square);
@@ -39,9 +38,9 @@ impl Chunk {
 
             let (pos, n, id) = create_cube_vertices_at(&index);
 
+            indices.extend(id.into_iter().map(|n| n as u32 + positions.len() as u32));
             positions.extend(pos);
             normals.extend(n);
-            indices.extend(id.into_iter().map(|n| n as u32 + positions.len() as u32));
         }
 
         cube_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);

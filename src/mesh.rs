@@ -133,3 +133,28 @@ pub fn create_cube_vertices_at(pos: &UVec3) -> (Vec<[f32; 3]>, Vec<[f32; 3]>, Ve
 
     (pos, n, indices)
 }
+
+#[cfg(test)]
+mod tests {
+    use strum::IntoEnumIterator;
+
+    use super::FaceDirection;
+
+    #[test]
+    fn indice_gen() {
+        let expected_indices = vec![
+            0, 3, 1, 1, 3, 2, // triangles making up the top (+y) facing side.
+            4, 5, 7, 5, 6, 7, // bottom (-y)
+            8, 11, 9, 9, 11, 10, // right (+x)
+            12, 13, 15, 13, 14, 15, // left (-x)
+            16, 19, 17, 17, 19, 18, // back (+z)
+            20, 21, 23, 21, 22, 23, // forward (-z)
+        ];
+        let indices: Vec<usize> = FaceDirection::iter()
+            .enumerate()
+            .flat_map(|(i, f)| f.indices(i))
+            .collect();
+
+        assert_eq!(indices, expected_indices);
+    }
+}

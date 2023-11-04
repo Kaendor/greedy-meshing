@@ -14,9 +14,7 @@ use chunk::Chunk;
 use diagnostics::MeshDiagnosticPlugin;
 use inspector::DiagnosticInspectorPlugin;
 
-pub const CHUNK_SIZE: usize = 1;
-pub const CHUNK_SIZE_SQUARED: usize = CHUNK_SIZE * CHUNK_SIZE;
-pub const CHUNK_SIZE_CUBED: usize = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
+pub const CHUNK_SIZE: usize = 3;
 
 mod chunk;
 mod diagnostics;
