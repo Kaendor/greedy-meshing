@@ -6,6 +6,7 @@ use bevy::{
 
 pub struct Chunk {
     pub size: usize,
+    size_squared: usize,
     pub voxels: Vec<Voxel>,
 }
 
@@ -16,7 +17,22 @@ impl Chunk {
                 kind: BlockKind::Rock,
             })
             .collect();
-        Chunk { voxels, size }
+        Chunk {
+            voxels,
+            size,
+            size_squared: size * size,
+        }
+    }
+
+    fn pos_from_index(&self, i: usize) -> UVec3 {
+        let z = i / (self.size_squared);
+
+        let ti = i - (z * self.size_squared);
+
+        let x = ti % self.size;
+        let y = ti / self.size;
+
+        UVec3::new(x as u32, y as u32, z as u32)
     }
 
     pub fn generate_naive_mesh(&self) -> Mesh {
@@ -25,16 +41,8 @@ impl Chunk {
         let mut normals = Vec::new();
         let mut indices = Vec::new();
 
-        let size_square = self.size.pow(2);
-
         for (i, _v) in self.voxels.iter().enumerate() {
-            let z = i / (size_square);
-
-            let ti = i - (z * size_square);
-
-            let x = ti % self.size;
-            let y = ti / self.size;
-            let index = UVec3::new(x as u32, y as u32, z as u32);
+            let index = self.pos_from_index(i);
 
             let (pos, n, id) = create_cube_vertices_at(&index);
 
