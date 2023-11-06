@@ -1,7 +1,7 @@
 pub mod mesh;
 
 use bevy::prelude::*;
-pub use mesh::{generate_naive_mesh, VoxelContainer};
+pub use mesh::{create_naive_mesh, VoxelContainer};
 
 /// Only here for testing purpose, use your own struct
 pub struct Chunk {

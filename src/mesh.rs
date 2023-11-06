@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy::render::{mesh::Indices, render_resource::PrimitiveTopology};
 use strum::{EnumIter, IntoEnumIterator};
 
-pub fn generate_naive_mesh<T>(voxels: &[T], voxel_container: &impl VoxelContainer) -> Mesh {
+pub fn create_naive_mesh<T>(voxels: &[T], voxel_container: &impl VoxelContainer) -> Mesh {
     let mut cube_mesh = Mesh::new(PrimitiveTopology::TriangleList);
     let mut positions = Vec::new();
     let mut normals = Vec::new();

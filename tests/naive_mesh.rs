@@ -8,7 +8,7 @@ use greedy_meshing::*;
 fn naive_mesh_simple() {
     let size = 1;
     let chunk = Chunk::new(size);
-    let chunk_mesh = generate_naive_mesh(&chunk.voxels, &chunk);
+    let chunk_mesh = create_naive_mesh(&chunk.voxels, &chunk);
 
     let vertices_count = chunk_mesh.count_vertices();
     let Indices::U32(indices) = chunk_mesh.indices().expect("indices") else {
