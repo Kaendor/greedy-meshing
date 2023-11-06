@@ -1,5 +1,39 @@
 use bevy::prelude::*;
+use bevy::render::{mesh::Indices, render_resource::PrimitiveTopology};
 use strum::{EnumIter, IntoEnumIterator};
+
+pub fn generate_naive_mesh<T>(voxels: &[T], voxel_container: &impl VoxelContainer) -> Mesh {
+    let mut cube_mesh = Mesh::new(PrimitiveTopology::TriangleList);
+    let mut positions = Vec::new();
+    let mut normals = Vec::new();
+    let mut indices = Vec::new();
+
+    for (i, _v) in voxels.iter().enumerate() {
+        let index = voxel_container.index_to_position(i);
+
+        let (pos, n, id) = create_cube_vertices_at(&index);
+
+        indices.extend(id.into_iter().map(|n| n as u32 + positions.len() as u32));
+        positions.extend(pos);
+        normals.extend(n);
+    }
+
+    cube_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
+
+    // For meshes with flat shading, normals are orthogonal (pointing out) from the direction of
+    // the surface.
+    // Normals are required for correct lighting calculations.
+    // Each array represents a normalized vector, which length should be equal to 1.0.
+    cube_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
+
+    cube_mesh.set_indices(Some(Indices::U32(indices)));
+
+    cube_mesh
+}
+
+pub trait VoxelContainer {
+    fn index_to_position(&self, i: usize) -> UVec3;
+}
 
 #[derive(EnumIter, Debug, PartialEq, Eq)]
 pub enum FaceDirection {

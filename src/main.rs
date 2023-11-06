@@ -10,16 +10,15 @@ use bevy::{
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_panorbit_camera::PanOrbitCamera;
 use bevy_panorbit_camera::PanOrbitCameraPlugin;
-use chunk::Chunk;
 use diagnostics::MeshDiagnosticPlugin;
+use greedy_meshing::generate_naive_mesh;
+use greedy_meshing::Chunk;
 use inspector::DiagnosticInspectorPlugin;
 
 pub const CHUNK_SIZE: usize = 3;
 
-mod chunk;
 mod diagnostics;
 mod inspector;
-mod mesh;
 
 fn main() {
     App::new()
@@ -50,7 +49,7 @@ fn setup(
     // Create and save a handle to the mesh.
 
     let chunk = Chunk::new(CHUNK_SIZE);
-    let chunk_mesh = chunk.generate_naive_mesh();
+    let chunk_mesh = generate_naive_mesh(&chunk.voxels, &chunk);
     let chunk_mesh_handle: Handle<Mesh> = meshes.add(chunk_mesh);
 
     commands.spawn((
